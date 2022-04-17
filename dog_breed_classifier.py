@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 from matplotlib import pyplot as plt
-from torch import optim
+from torch import optim, nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
@@ -20,7 +20,7 @@ TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/mini_test
 N_EPOCHS = 5
 BATCH_SIZE_TRAIN = 64
 BATCH_SIZE_TEST = 64
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.5
 MOMENTUM = 0.5
 LOG_INTERVAL = 10
 
@@ -77,42 +77,76 @@ def build_dataframe(csv_file, breed_to_code_dict):
     return df
 
 
-def train(epoch, model, optimizer, train_loader, train_losses, train_counter):
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
+def train(train_loader, model, loss_fn, optimizer):
+    size = len(train_loader.dataset)
+    for batch, (X, y) in enumerate(train_loader):
+        # compute prediction and loss
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        # backpropagation
         optimizer.zero_grad()
-        output = model(data)
-        loss = F.nll_loss(output, target)
         loss.backward()
         optimizer.step()
-        if batch_idx % LOG_INTERVAL == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), loss.item()))
-            train_losses.append(loss.item())
-            train_counter.append(
-                (batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
-            torch.save(model.state_dict(), 'results/model.pth')
-            torch.save(optimizer.state_dict(), 'results/optimizer.pth')
+
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch * len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
-def test(model, test_loader, test_losses):
-    model.eval()
-    test_loss = 0
-    correct = 0
+def test(test_loader, model, loss_fn):
+    size = len(test_loader.dataset)
+    num_batches = len(test_loader)
+    test_loss, correct = 0, 0
+
     with torch.no_grad():
-        for data, target in test_loader:
-            output = model(data)
-            target_tensor = torch.tensor(target)
-            # print(target)
-            test_loss += F.nll_loss(output, target_tensor, reduction='sum').item()
-            pred = output.data.max(1, keepdim=True)[1]
-            correct += pred.eq(target.data.view_as(pred)).sum()
-    test_loss /= len(test_loader.dataset)
-    test_losses.append(test_loss)
-    print('\nTest set: Avg. loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
+        for X, y in test_loader:
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+
+    test_loss /= num_batches
+    correct /= size
+    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+
+# def train(epoch, model, optimizer, train_loader, train_losses, train_counter, loss_fn):
+#     model.train()
+#     for batch_idx, (data, target) in enumerate(train_loader):
+#         optimizer.zero_grad()
+#         output = model(data)
+#         # loss = F.nll_loss(output, target)
+#         loss = loss_fn(output, target)
+#         loss.backward()
+#         optimizer.step()
+#         if batch_idx % LOG_INTERVAL == 0:
+#             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+#                 epoch, batch_idx * len(data), len(train_loader.dataset),
+#                        100. * batch_idx / len(train_loader), loss.item()))
+#             train_losses.append(loss.item())
+#             train_counter.append(
+#                 (batch_idx * 64) + ((epoch - 1) * len(train_loader.dataset)))
+#             torch.save(model.state_dict(), 'results/model.pth')
+#             torch.save(optimizer.state_dict(), 'results/optimizer.pth')
+#
+#
+# def test(model, test_loader, test_losses):
+#     model.eval()
+#     test_loss = 0
+#     correct = 0
+#     with torch.no_grad():
+#         for data, target in test_loader:
+#             output = model(data)
+#             target_tensor = torch.tensor(target)
+#             # print(target)
+#             test_loss += F.nll_loss(output, target_tensor, reduction='sum').item()
+#             pred = output.data.max(1, keepdim=True)[1]
+#             correct += pred.eq(target.data.view_as(pred)).sum()
+#     test_loss /= len(test_loader.dataset)
+#     test_losses.append(test_loss)
+#     print('\nTest set: Avg. loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+#         test_loss, correct, len(test_loader.dataset),
+#         100. * correct / len(test_loader.dataset)))
 
 
 def main():
@@ -146,20 +180,29 @@ def main():
     # PyTorch MobileNet Documentation: https://pytorch.org/hub/pytorch_vision_mobilenet_v2/
     mobilenet_model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
 
-    # initialize an optimizer
-    optimizer = optim.SGD(mobilenet_model.parameters(), lr=LEARNING_RATE,
-                          momentum=MOMENTUM)
+    # initialize the loss function and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(mobilenet_model.parameters(), lr=LEARNING_RATE)
 
     # train the model
-    train_losses = []
-    train_counter = []
-    test_losses = []
-    test_counter = [i * len(train_loader.dataset) for i in range(N_EPOCHS + 1)]
+    for epoch in range(N_EPOCHS):
+        print(f'Epoch {epoch + 1}\n-------------------------------')
+        train(train_loader=train_loader, model=mobilenet_model, loss_fn=loss_fn, optimizer=optimizer)
+        test(test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn)
+    print('Done!')
 
-    test(mobilenet_model, test_loader, test_losses)
-    for epoch in range(1, N_EPOCHS + 1):
-        train(epoch, mobilenet_model, optimizer, train_loader, train_losses, train_counter)
-        test(mobilenet_model, test_loader, test_losses)
+    # save the model
+    torch.save(mobilenet_model.state_dict(), 'results/model.pth')
+    
+    # train_losses = []
+    # train_counter = []
+    # test_losses = []
+    # test_counter = [i * len(train_loader.dataset) for i in range(N_EPOCHS + 1)]
+    #
+    # test(mobilenet_model, test_loader, test_losses)
+    # for epoch in range(1, N_EPOCHS + 1):
+    #     train(epoch, mobilenet_model, optimizer, train_loader, train_losses, train_counter, loss_fn)
+    #     test(mobilenet_model, test_loader, test_losses)
 
 
 if __name__ == "__main__":
