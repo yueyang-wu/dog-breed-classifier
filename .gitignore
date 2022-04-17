@@ -1,0 +1,8 @@
+data/
+results/
+others/
+Pipfile
+Pipfile.lock
+.DS_Store
+.idea/
+__pycache__/
