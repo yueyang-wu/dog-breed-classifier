@@ -16,11 +16,10 @@ DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all imag
 LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/labels.csv'  # all images and labels
 TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/train_data.csv'  # training images and labels
 TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data.csv'  # testing images and labels
-N_EPOCHS = 5
+N_EPOCHS = 10
 BATCH_SIZE_TRAIN = 64
 BATCH_SIZE_TEST = 64
 LEARNING_RATE = 0.001
-# MOMENTUM = 0.5
 LOG_INTERVAL = 10
 
 
@@ -114,6 +113,11 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, n_epochs=N_EPOCH
             if batch % 100 == 0:
                 loss, current = loss.item(), batch * len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+        # for each epoch, save a model version
+        filename = 'results/model' + str(epoch) + '.pth'
+        torch.save(model.state_dict(), filename)
+
         test(test_loader=test_loader, model=model, loss_fn=loss_fn)
 
 
