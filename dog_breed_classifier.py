@@ -14,13 +14,13 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all images
 LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/labels.csv'  # all images and labels
-TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/mini_train_data.csv'  # training images and labels
-TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/mini_test_data.csv'  # testing images and labels
-N_EPOCHS = 50
-BATCH_SIZE_TRAIN = 4
-BATCH_SIZE_TEST = 4
+TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/train_data.csv'  # training images and labels
+TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data.csv'  # testing images and labels
+N_EPOCHS = 5
+BATCH_SIZE_TRAIN = 64
+BATCH_SIZE_TEST = 64
 LEARNING_RATE = 0.001
-MOMENTUM = 0.5
+# MOMENTUM = 0.5
 LOG_INTERVAL = 10
 
 
@@ -60,6 +60,7 @@ class DogBreedDataset(Dataset):
 class MobilenetSubModel(nn.Module):
     """
     PyTorch MobileNet Documentation: https://pytorch.org/hub/pytorch_vision_mobilenet_v2/
+    Keep the features of MobileNet, modify the classifier
     """
     # initialize the model
     def __init__(self):
@@ -67,9 +68,9 @@ class MobilenetSubModel(nn.Module):
         self.model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
         # for para in self.model.features.parameters():
         #     para.requires_grad = False
-        self.model.classifier[1] = nn.Linear(1280, 5)
-        print('---------------model-------------')
-        print(self.model)
+        self.model.classifier[1] = nn.Linear(1280, 120)
+        # print('---------------model-------------')
+        # print(self.model)
         # self.features = model.features
         # print('----------------features-----------------')
         # print(self.features)
@@ -139,11 +140,11 @@ def main():
     torch.backends.cudnn.enabled = False
 
     # build breed and code convert dicts
-    breed_to_code_dict, code_to_breed_dict = build_breed_code_dicts(TRAIN_LABEL_CSV_PATH)
+    breed_to_code_dict, code_to_breed_dict = build_breed_code_dicts(LABEL_CSV_PATH)
 
     # build dataframes
     train_df = build_dataframe(TRAIN_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
-    test_df = build_dataframe(TRAIN_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
+    test_df = build_dataframe(TEST_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
 
     # load the training and testing data
     # reshape the images to feed them to the model
@@ -169,12 +170,14 @@ def main():
 
     # build mobilenet model
     mobilenet_model = MobilenetSubModel()
-    print('-------------------mobilenet----------------------------')
-    print(mobilenet_model)
+    # print('-------------------mobilenet----------------------------')
+    # print(mobilenet_model)
 
     # initialize the loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(mobilenet_model.parameters(), lr=LEARNING_RATE)
+
+    # train the model
     train(train_loader=train_loader, test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn, optimizer=optimizer)
 
     # train the model
