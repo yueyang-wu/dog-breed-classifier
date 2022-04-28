@@ -201,6 +201,12 @@ def main():
     optimizer = optim.Adam(mobilenet_model.parameters(), lr=LEARNING_RATE)
 
     # train the model
+    print('*****Model Info*****')
+    print(f'Epoch Size: {N_EPOCHS}')
+    print(f'Train Batch Size: {BATCH_SIZE_TRAIN}')
+    print(f'Learning Rate: {LEARNING_RATE}')
+    print('********************\n')
+
     accuracy_arr = []
     loss_arr = []
     start = datetime.now()

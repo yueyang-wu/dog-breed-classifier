@@ -18,9 +18,9 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all images
 LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/labels.csv'  # all images and labels
-TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/mini_train_data.csv'  # training images and labels
-TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/mini_test_data.csv'  # testing images and labels
-N_EPOCHS = 3
+TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/train_data.csv'  # training images and labels
+TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data.csv'  # testing images and labels
+N_EPOCHS = 15
 BATCH_SIZE_TRAIN = 64
 BATCH_SIZE_TEST = 64
 LEARNING_RATE = 0.001
@@ -197,6 +197,12 @@ def main():
     optimizer = optim.Adam(resnet_model.parameters(), lr=LEARNING_RATE)
 
     # train the model
+    print('*****Model Info*****')
+    print(f'Epoch Size: {N_EPOCHS}')
+    print(f'Train Batch Size: {BATCH_SIZE_TRAIN}')
+    print(f'Learning Rate: {LEARNING_RATE}')
+    print('********************\n')
+
     accuracy_arr = []
     loss_arr = []
     start = datetime.now()
