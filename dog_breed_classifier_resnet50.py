@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 from torch import optim, nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
+from datetime import datetime
 import torch.nn.functional as F
 
 # allow using unverified SSL due to some configuration issue
@@ -19,11 +20,10 @@ DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all imag
 LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/labels.csv'  # all images and labels
 TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/mini_train_data.csv'  # training images and labels
 TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/mini_test_data.csv'  # testing images and labels
-N_EPOCHS = 5
+N_EPOCHS = 3
 BATCH_SIZE_TRAIN = 64
 BATCH_SIZE_TEST = 64
 LEARNING_RATE = 0.001
-LOG_INTERVAL = 10
 
 
 class DogBreedDataset(Dataset):
@@ -95,9 +95,9 @@ def build_dataframe(csv_file, breed_to_code_dict):
     return df
 
 
-def train(train_loader, test_loader, model, loss_fn, optimizer, n_epochs=N_EPOCHS):
+def train(train_loader, test_loader, model, loss_fn, optimizer, accuracy_arr, loss_arr, n_epochs=N_EPOCHS):
     print('Before Train:')
-    test(test_loader=train_loader, model=model, loss_fn=loss_fn)
+    test(test_loader=train_loader, model=model, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
     print('')
     for epoch in range(n_epochs):
         print(f'Epoch: {epoch + 1}')
@@ -114,20 +114,20 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, n_epochs=N_EPOCH
 
             if batch % 50 == 0:
                 loss, current = loss.item(), batch * len(X)
-                print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+                print(f"[{current:>5d}/{size:>5d}]")
 
         # for each epoch, save a model version
         filename = 'results/model_resnet50_' + str(epoch + 1) + '.pth'
         torch.save(model.state_dict(), filename)
 
         print('Train:')
-        test(test_loader=train_loader, model=model, loss_fn=loss_fn)
+        test(test_loader=train_loader, model=model, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
         # print('Test:')
         # test(test_loader=test_loader, model=model, loss_fn=loss_fn)
         print('')
 
 
-def test(test_loader, model, loss_fn=None):
+def test(test_loader, model, loss_fn, accuracy_arr, loss_arr):
     size = len(test_loader.dataset)
     num_batches = len(test_loader)
     test_loss, correct = 0, 0
@@ -142,6 +142,8 @@ def test(test_loader, model, loss_fn=None):
     test_loss /= num_batches
     correct /= size
     print(f"Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f}")
+    accuracy_arr.append(100*correct)
+    loss_arr.append(test_loss)
 
 
 def main():
@@ -183,9 +185,15 @@ def main():
     optimizer = optim.Adam(resnet_model.parameters(), lr=LEARNING_RATE)
 
     # train the model
-    train(train_loader=train_loader, test_loader=test_loader, model=resnet_model, loss_fn=loss_fn, optimizer=optimizer)
+    accuracy_arr = []
+    loss_arr = []
+    start = datetime.now()
+    train(train_loader=train_loader, test_loader=test_loader, model=resnet_model, loss_fn=loss_fn, optimizer=optimizer,
+          accuracy_arr=accuracy_arr, loss_arr=loss_arr)
+    end = datetime.now()
 
     print('Done!')
+    print(f'Total Training Time in seconds: {(end - start).total_seconds()}')
 
     # save the final model
     torch.save(resnet_model.state_dict(), 'results/model_resnet50.pth')
