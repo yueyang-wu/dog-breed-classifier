@@ -146,6 +146,18 @@ def test(test_loader, model, loss_fn, accuracy_arr, loss_arr):
     loss_arr.append(test_loss)
 
 
+def plot_result(accuracy_arr, loss_arr):
+    x_axis = list(range(1, N_EPOCHS + 2))
+    plt.subplot(2, 1, 1)
+    plt.plot(x_axis, accuracy_arr)
+    plt.title('Accuracy')
+    plt.subplot(2, 1, 2)
+    plt.plot(x_axis, loss_arr)
+    plt.title('Loss')
+    plt.tight_layout()
+    plt.show()
+
+
 def main():
     # make the code repeatable
     torch.manual_seed(1)
@@ -197,6 +209,9 @@ def main():
 
     # save the final model
     torch.save(resnet_model.state_dict(), 'results/model_resnet50.pth')
+
+    # plot the accuracy and loss information
+    plot_result(accuracy_arr, loss_arr)
 
 
 if __name__ == "__main__":
