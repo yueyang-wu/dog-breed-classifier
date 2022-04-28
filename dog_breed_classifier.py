@@ -98,7 +98,11 @@ def build_dataframe(csv_file, breed_to_code_dict):
 
 
 def train(train_loader, test_loader, model, loss_fn, optimizer, n_epochs=N_EPOCHS):
+    print('Before Train:')
+    test(test_loader=train_loader, model=model, loss_fn=loss_fn)
+    print('')
     for epoch in range(n_epochs):
+        print(f'Epoch: {epoch + 1}')
         size = len(train_loader.dataset)
         for batch, (X, y) in enumerate(train_loader):
             # compute prediction and loss
@@ -110,15 +114,19 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, n_epochs=N_EPOCH
             loss.backward()
             optimizer.step()
 
-            if batch % 100 == 0:
+            if batch % 50 == 0:
                 loss, current = loss.item(), batch * len(X)
                 print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
         # for each epoch, save a model version
-        filename = 'results/model' + str(epoch) + '.pth'
+        filename = 'results/model_resnet50_' + str(epoch + 1) + '.pth'
         torch.save(model.state_dict(), filename)
 
-        test(test_loader=test_loader, model=model, loss_fn=loss_fn)
+        print('Train:')
+        test(test_loader=train_loader, model=model, loss_fn=loss_fn)
+        # print('Test:')
+        # test(test_loader=test_loader, model=model, loss_fn=loss_fn)
+        print('')
 
 
 def test(test_loader, model, loss_fn=None):
@@ -169,9 +177,6 @@ def main():
     # plt.imshow(train_dataset[0][0].permute(1, 2, 0))
     # plt.show()
 
-    # load the MobileNet Model from PyTorch
-    # mobilenet_model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
-
     # build mobilenet model
     mobilenet_model = MobilenetSubModel()
     # print('-------------------mobilenet----------------------------')
@@ -184,14 +189,6 @@ def main():
     # train the model
     train(train_loader=train_loader, test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn, optimizer=optimizer)
 
-    # train the model
-    # for epoch in range(N_EPOCHS):
-    #     print(f'Epoch {epoch + 1}\n-------------------------------')
-    #     train(train_loader=train_loader, model=mobilenet_model, loss_fn=loss_fn, optimizer=optimizer)
-    #     if epoch % 10 == 0:
-    #         filename = 'results/model' + str(epoch) + '.pth'
-    #         torch.save(mobilenet_model.state_dict(), filename)
-    #     test(test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn)
     print('Done!')
 
     # save the final model
