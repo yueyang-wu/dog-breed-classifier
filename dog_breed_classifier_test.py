@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 import dog_breed_classifier
+import dog_breed_classifier_resnet50
 
 
 DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all images
@@ -12,10 +13,16 @@ TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data
 
 
 def main():
+    # load mobilenet model
     mobilenet_model = dog_breed_classifier.MobilenetSubModel()
     mobilenet_model.load_state_dict(torch.load('results/model.pth'))
     mobilenet_model.eval()
     # print(mobilenet_model)
+
+    # load resnet model
+    resnet_model = dog_breed_classifier_resnet50.ResNetSubModel()
+    resnet_model.load_state_dict(torch.load('results/model_resnet50.pth'))
+    resnet_model.eval()
 
     # build breed and code convert dicts
     breed_to_code_dict, code_to_breed_dict = dog_breed_classifier.build_breed_code_dicts(LABEL_CSV_PATH)
@@ -40,7 +47,11 @@ def main():
     train_loader = DataLoader(train_dataset, shuffle=True)
     test_loader = DataLoader(test_dataset, shuffle=True)
 
-    dog_breed_classifier.test(test_loader=train_loader, model=mobilenet_model)
+    # test on mobilenet
+    # dog_breed_classifier.test(test_loader=test_loader, model=mobilenet_model)
+
+    # test on resnet
+    dog_breed_classifier.test(test_loader=test_loader, model=resnet_model)
 
     # for data, target in train_loader:
     #     with torch.no_grad():
