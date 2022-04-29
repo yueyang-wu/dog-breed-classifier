@@ -18,7 +18,7 @@ TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data
 
 def main():
     # load mobilenet model
-    mobilenet_model = dog_breed_classifier.MobilenetSubModel()
+    mobilenet_model = dog_breed_classifier_mobilenet.MobilenetSubModel()
     mobilenet_model.load_state_dict(torch.load('results/model.pth'))
     mobilenet_model.eval()
     # print(mobilenet_model)
@@ -33,12 +33,12 @@ def main():
     vgg16_model.load_state_dict(torch.load('results/model_vgg16.pth'))
 
     # build breed and code convert dicts
-    breed_to_code_dict, code_to_breed_dict = dog_breed_classifier.build_breed_code_dicts(LABEL_CSV_PATH)
+    breed_to_code_dict, code_to_breed_dict = dog_breed_classifier_mobilenet.build_breed_code_dicts(LABEL_CSV_PATH)
     # print(breed_to_code_dict)
 
     # build dataframes
-    train_df = dog_breed_classifier.build_dataframe(TRAIN_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
-    test_df = dog_breed_classifier.build_dataframe(TEST_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
+    train_df = dog_breed_classifier_mobilenet.build_dataframe(TRAIN_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
+    test_df = dog_breed_classifier_mobilenet.build_dataframe(TEST_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
 
     # load the training and testing data
     # reshape the images to feed them to the model
