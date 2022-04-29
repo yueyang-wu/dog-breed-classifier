@@ -9,6 +9,8 @@ from torch import optim, nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from datetime import datetime
+import torchvision
+
 
 # allow using unverified SSL due to some configuration issue
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -65,9 +67,9 @@ class MobilenetSubModel(nn.Module):
     def __init__(self):
         super(MobilenetSubModel, self).__init__()
         self.model = torch.hub.load('pytorch/vision:v0.10.0', 'vgg16', pretrained=True)
-        # for para in self.model.features.parameters():
-        #     para.requires_grad = False
-        self.model.classifier[1] = nn.Linear(1280, 120)
+        for para in self.model.features.parameters():
+            para.requires_grad = False
+        self.model.classifier[-1] = nn.Linear(4096, 120)
         # print('---------------model-------------')
         # print(self.model)
         # self.features = model.features
@@ -119,7 +121,7 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, accuracy_arr, lo
                 print(f"[{current:>5d}/{size:>5d}]")
 
         # for each epoch, save a model version
-        filename = 'results/model_vgg16_' + str(epoch + 1) + '.pth'
+        filename = 'results/model_resnet50_' + str(epoch + 1) + '.pth'
         torch.save(model.state_dict(), filename)
 
         print('Train:')
@@ -198,7 +200,9 @@ def main():
 
     # initialize the loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(mobilenet_model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.SGD(mobilenet_model.parameters(), lr=0.001, momentum=0.9)
+    # print('-------------------mobilenet----------------------------')
+    # print(mobilenet_model)
 
     # train the model
     print('*****Model Info*****')
