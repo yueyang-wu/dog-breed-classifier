@@ -58,14 +58,14 @@ class DogBreedDataset(Dataset):
         return [image, breed_code]
 
 
-class MobilenetSubModel(nn.Module):
+class VGG16Model(nn.Module):
     """
     PyTorch MobileNet Documentation: https://pytorch.org/hub/pytorch_vision_mobilenet_v2/
     Keep the features of MobileNet, modify the classifier
     """
     # initialize the model
     def __init__(self):
-        super(MobilenetSubModel, self).__init__()
+        super(VGG16Model, self).__init__()
         self.model = torch.hub.load('pytorch/vision:v0.10.0', 'vgg16', pretrained=True)
         for para in self.model.features.parameters():
             para.requires_grad = False
@@ -194,7 +194,7 @@ def main():
     # plt.show()
 
     # build mobilenet model
-    mobilenet_model = MobilenetSubModel()
+    mobilenet_model = VGG16Model()
     # print('-------------------mobilenet----------------------------')
     # print(mobilenet_model)
 
