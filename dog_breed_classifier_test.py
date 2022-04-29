@@ -49,8 +49,8 @@ def main():
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
     ])
-    train_dataset = dog_breed_classifier.DogBreedDataset(DATA_PATH, train_df, data_transform)
-    test_dataset = dog_breed_classifier.DogBreedDataset(DATA_PATH, test_df, data_transform)
+    train_dataset = dog_breed_classifier_mobilenet.DogBreedDataset(DATA_PATH, train_df, data_transform)
+    test_dataset = dog_breed_classifier_mobilenet.DogBreedDataset(DATA_PATH, test_df, data_transform)
 
     train_loader = DataLoader(train_dataset, shuffle=True)
     test_loader = DataLoader(test_dataset, shuffle=True)
