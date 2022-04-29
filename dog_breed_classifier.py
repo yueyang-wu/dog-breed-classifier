@@ -64,7 +64,7 @@ class MobilenetSubModel(nn.Module):
     # initialize the model
     def __init__(self):
         super(MobilenetSubModel, self).__init__()
-        self.model = torch.hub.load('pytorch/vision:v0.10.0', 'vgg16', pretrained=True)
+        self.model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
         # for para in self.model.features.parameters():
         #     para.requires_grad = False
         self.model.classifier[1] = nn.Linear(1280, 120)
@@ -119,7 +119,7 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, accuracy_arr, lo
                 print(f"[{current:>5d}/{size:>5d}]")
 
         # for each epoch, save a model version
-        filename = 'results/model_vgg16_' + str(epoch + 1) + '.pth'
+        filename = 'results/model_mobilenet_' + str(epoch + 1) + '.pth'
         torch.save(model.state_dict(), filename)
 
         print('Train:')
