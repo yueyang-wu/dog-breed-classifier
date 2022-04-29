@@ -4,22 +4,19 @@ import ssl
 import pandas as pd
 import torch
 from PIL import Image
-import torchvision
 from matplotlib import pyplot as plt
 from torch import optim, nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from datetime import datetime
-import torch.nn.functional as F
 
 # allow using unverified SSL due to some configuration issue
 ssl._create_default_https_context = ssl._create_unverified_context
 
-
-DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all images
-LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/labels.csv'  # all images and labels
-TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/train_data.csv'  # training images and labels
-TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data.csv'  # testing images and labels
+DATA_PATH = './data/data/images'  # all images
+LABEL_CSV_PATH = './data/data/labels.csv'  # all images and labels
+TRAIN_LABEL_CSV_PATH = './data/data/train_data.csv'  # training images and labels
+TEST_LABEL_CSV_PATH = './data/data/test_data.csv'  # testing images and labels
 N_EPOCHS = 15
 BATCH_SIZE_TRAIN = 64
 BATCH_SIZE_TEST = 64
@@ -59,18 +56,23 @@ class DogBreedDataset(Dataset):
         return [image, breed_code]
 
 
-class ResNetSubModel(nn.Module):
+class MobilenetSubModel(nn.Module):
     """
-        PyTorch ResNet50 Documentation: https://pytorch.org/hub/nvidia_deeplearningexamples_resnet50/
-        Keep the features of ResNet50, modify the fully connected layer
-        """
+    PyTorch MobileNet Documentation: https://pytorch.org/hub/pytorch_vision_mobilenet_v2/
+    Keep the features of MobileNet, modify the classifier
+    """
     # initialize the model
     def __init__(self):
-        super(ResNetSubModel, self).__init__()
-        self.model = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_resnet50', pretrained=True)
-        self.model.fc = nn.Linear(2048, 120)
+        super(MobilenetSubModel, self).__init__()
+        self.model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
+        # for para in self.model.features.parameters():
+        #     para.requires_grad = False
+        self.model.classifier[1] = nn.Linear(1280, 120)
         # print('---------------model-------------')
         # print(self.model)
+        # self.features = model.features
+        # print('----------------features-----------------')
+        # print(self.features)
 
     def forward(self, x):
         return self.model(x)
@@ -117,7 +119,7 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, accuracy_arr, lo
                 print(f"[{current:>5d}/{size:>5d}]")
 
         # for each epoch, save a model version
-        filename = 'results/model_resnet50_' + str(epoch + 1) + '.pth'
+        filename = 'results/model_mobilenet_' + str(epoch + 1) + '.pth'
         torch.save(model.state_dict(), filename)
 
         print('Train:')
@@ -161,7 +163,7 @@ def plot_result(accuracy_arr, loss_arr):
 def main():
     # make the code repeatable
     torch.manual_seed(1)
-    torch.backends.cudnn.enabled = True
+    torch.backends.cudnn.enabled = False
 
     # build breed and code convert dicts
     breed_to_code_dict, code_to_breed_dict = build_breed_code_dicts(LABEL_CSV_PATH)
@@ -189,12 +191,14 @@ def main():
     # plt.imshow(train_dataset[0][0].permute(1, 2, 0))
     # plt.show()
 
-    # build ResNet model
-    resnet_model = ResNetSubModel()
+    # build mobilenet model
+    mobilenet_model = MobilenetSubModel()
+    # print('-------------------mobilenet----------------------------')
+    # print(mobilenet_model)
 
     # initialize the loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(resnet_model.parameters(), lr=LEARNING_RATE)
+    optimizer = optim.Adam(mobilenet_model.parameters(), lr=LEARNING_RATE)
 
     # train the model
     print('*****Model Info*****')
@@ -206,15 +210,15 @@ def main():
     accuracy_arr = []
     loss_arr = []
     start = datetime.now()
-    train(train_loader=train_loader, test_loader=test_loader, model=resnet_model, loss_fn=loss_fn, optimizer=optimizer,
-          accuracy_arr=accuracy_arr, loss_arr=loss_arr)
+    train(train_loader=train_loader, test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn,
+          optimizer=optimizer, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
     end = datetime.now()
 
     print('Done!')
     print(f'Total Training Time in seconds: {(end - start).total_seconds()}')
 
     # save the final model
-    torch.save(resnet_model.state_dict(), 'results/model_resnet50.pth')
+    torch.save(mobilenet_model.state_dict(), 'results/model.pth')
 
     # plot the accuracy and loss information
     plot_result(accuracy_arr, loss_arr)

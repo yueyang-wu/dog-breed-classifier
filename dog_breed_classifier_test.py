@@ -1,9 +1,13 @@
+from datetime import datetime
+
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-import dog_breed_classifier
+import dog_breed_classifier_mobilenet
 import dog_breed_classifier_resnet50
+import dog_breed_classifier_vgg16
 
 
 DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all images
@@ -23,6 +27,10 @@ def main():
     resnet_model = dog_breed_classifier_resnet50.ResNetSubModel()
     resnet_model.load_state_dict(torch.load('results/model_resnet50.pth'))
     resnet_model.eval()
+
+    # load vgg16 model
+    vgg16_model = dog_breed_classifier_vgg16.VGG16Model()
+    vgg16_model.load_state_dict(torch.load('results/model_vgg16.pth'))
 
     # build breed and code convert dicts
     breed_to_code_dict, code_to_breed_dict = dog_breed_classifier.build_breed_code_dicts(LABEL_CSV_PATH)
@@ -47,18 +55,25 @@ def main():
     train_loader = DataLoader(train_dataset, shuffle=True)
     test_loader = DataLoader(test_dataset, shuffle=True)
 
+    loss_fn = nn.CrossEntropyLoss()
+    accuracy_arr = []
+    loss_arr = []
+    start = datetime.now()
+
     # test on mobilenet
-    # dog_breed_classifier.test(test_loader=test_loader, model=mobilenet_model)
+    # dog_breed_classifier_mobilenet.test(test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn,
+    # accuracy_arr=accuracy_arr, loss_arr=loss_arr)
 
     # test on resnet
-    dog_breed_classifier.test(test_loader=test_loader, model=resnet_model)
+    dog_breed_classifier_mobilenet.test(test_loader=test_loader, model=resnet_model, loss_fn=loss_fn,
+                                        accuracy_arr=accuracy_arr, loss_arr=loss_arr)
 
-    # for data, target in train_loader:
-    #     with torch.no_grad():
-    #         output = mobilenet_model(data)
-    #         print(output)
-    #         code = output.argmax().item()
-    #         print(code_to_breed_dict[code])
+    # test on vgg16
+    # dog_breed_classifier_mobilenet.test(test_loader=test_loader, model=vgg16_model, loss_fn=loss_fn,
+    #                                     accuracy_arr=accuracy_arr, loss_arr=loss_arr)
+
+    end = datetime.now()
+    print(f'Total Testing Time in seconds: {(end - start).total_seconds()}')
 
 
 if __name__ == "__main__":
