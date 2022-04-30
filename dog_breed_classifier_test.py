@@ -19,7 +19,7 @@ TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data
 def main():
     # load mobilenet model
     mobilenet_model = dog_breed_classifier_mobilenet.MobilenetSubModel()
-    mobilenet_model.load_state_dict(torch.load('results/model.pth'))
+    mobilenet_model.load_state_dict(torch.load('results/model_mobilenet.pth'))
     mobilenet_model.eval()
     # print(mobilenet_model)
 
@@ -31,6 +31,10 @@ def main():
     # load vgg16 model
     vgg16_model = dog_breed_classifier_vgg16.VGG16Model()
     vgg16_model.load_state_dict(torch.load('results/model_vgg16.pth'))
+
+    # load mobilenet experiment model
+    mobilenet_model_epoch10_lr0001 = dog_breed_classifier_mobilenet.MobilenetSubModel()
+    mobilenet_model_epoch10_lr0001.load_state_dict(torch.load('results/model_mobilenet_8_0.001.pth'))
 
     # build breed and code convert dicts
     breed_to_code_dict, code_to_breed_dict = dog_breed_classifier_mobilenet.build_breed_code_dicts(LABEL_CSV_PATH)
@@ -65,12 +69,16 @@ def main():
     # accuracy_arr=accuracy_arr, loss_arr=loss_arr)
 
     # test on resnet
-    dog_breed_classifier_mobilenet.test(test_loader=test_loader, model=resnet_model, loss_fn=loss_fn,
-                                        accuracy_arr=accuracy_arr, loss_arr=loss_arr)
+    # dog_breed_classifier_mobilenet.test(test_loader=test_loader, model=resnet_model, loss_fn=loss_fn,
+    #                                     accuracy_arr=accuracy_arr, loss_arr=loss_arr)
 
     # test on vgg16
     # dog_breed_classifier_mobilenet.test(test_loader=test_loader, model=vgg16_model, loss_fn=loss_fn,
     #                                     accuracy_arr=accuracy_arr, loss_arr=loss_arr)
+
+    # test on mobilenet
+    dog_breed_classifier_mobilenet.test(test_loader=test_loader, model=mobilenet_model_epoch10_lr0001, loss_fn=loss_fn,
+                                        accuracy_arr=accuracy_arr, loss_arr=loss_arr)
 
     end = datetime.now()
     print(f'Total Testing Time in seconds: {(end - start).total_seconds()}')
