@@ -3,27 +3,16 @@ CS5330 Final Project
 Yueyang Wu, Yuyang Tian, Liqi Qi
 """
 
-from datetime import datetime
-
-import torch
-from torch import nn
-from torch.utils.data import DataLoader
-from torchvision import transforms
-
-# import dog_breed_classifier_mobilenet
-# import dog_breed_classifier_resnet50
-# import dog_breed_classifier_vgg16
-
 from utils import *
 
 
-# DATA_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/images'  # all images
-# LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/labels.csv'  # all images and labels
-# TRAIN_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/train_data.csv'  # training images and labels
-# TEST_LABEL_CSV_PATH = '/Users/yueyangwu/Desktop/CS5330/final_proj/data/test_data.csv'  # testing images and labels
-
-
 def main(argv):
+    """
+    Load a model
+    Build the training and testing data loaders
+    Apply the model and display the results
+    :param argv: code of the model to be tested ('m' : mobilenet, 'v' : vgg16, 'r' : resnet)
+    """
     if len(argv) != 2:
         print('Wrong Input')
         return
@@ -42,19 +31,6 @@ def main(argv):
         model = MobilenetSubModel()
         model.load_state_dict(torch.load('results/model_mobilenet_8_0.001.pth'))
     model.eval()
-
-    # # load resnet model
-    # resnet_model = ResNetSubModel()
-    # resnet_model.load_state_dict(torch.load('results/model_resnet50.pth'))
-    # resnet_model.eval()
-    #
-    # # load vgg16 model
-    # vgg16_model = VGG16Model()
-    # vgg16_model.load_state_dict(torch.load('results/model_vgg16.pth'))
-
-    # # load mobilenet experiment model
-    # mobilenet_model_epoch10_lr0001 = MobilenetSubModel()
-    # mobilenet_model_epoch10_lr0001.load_state_dict(torch.load('results/model_mobilenet_8_0.001.pth'))
 
     # build breed and code convert dicts
     breed_to_code_dict, code_to_breed_dict = build_breed_code_dicts(LABEL_CSV_PATH)
@@ -82,17 +58,8 @@ def main(argv):
     loss_arr = []
     start = datetime.now()
 
-    # test on mobilenet
-    # test(test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
-
     # test on the model
     test(test_loader=test_loader, model=model, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
-
-    # test on vgg16
-    # test(test_loader=test_loader, model=vgg16_model, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
-
-    # test on mobilenet
-    # test(test_loader=test_loader, model=mobilenet_model_epoch10_lr0001, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
 
     end = datetime.now()
     print(f'Total Testing Time in seconds: {(end - start).total_seconds()}')

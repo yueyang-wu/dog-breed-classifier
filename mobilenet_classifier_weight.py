@@ -3,42 +3,20 @@ CS5330 Final Project
 Yueyang Wu, Yuyang Tian, Liqi Qi
 """
 
-# import os
-# import ssl
-#
-# import pandas as pd
-# import torch
-# from PIL import Image
-# from matplotlib import pyplot as plt
-# from torch import optim, nn
-# from torch.utils.data import Dataset, DataLoader
-# from torchvision import transforms
-# from datetime import datetime
-# from dog_breed_classifier_mobilenet import *
 import cv2 as cv
-
 from utils import *
 
 # allow using unverified SSL due to some configuration issue
 ssl._create_default_https_context = ssl._create_unverified_context
 
-# DATA_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/images'  # all images
-# LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/labels.csv'  # all images and labels
-# TRAIN_LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/train_data.csv'  # training images and labels
-# TEST_LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/test_data.csv'  # testing images and labels
-# N_EPOCHS = 15
-# BATCH_SIZE_TRAIN = 64
-# BATCH_SIZE_TEST = 64
-# LEARNING_RATE = 0.001
-
-
-def load_trained_model(model, pthFilePath):
-    # load the previous model and optimizer data from file
-    model_state_dict = torch.load(pthFilePath)
-    model.load_state_dict(model_state_dict)
-
 
 def main():
+    """
+    Build the training and testing data loaders
+    Load the MobileNet model
+    Analyze the classifier weight of the model
+    Apply the filters to an image from the dataset and plot the results
+    """
     # make the code repeatable
     torch.manual_seed(1)
     torch.backends.cudnn.enabled = False

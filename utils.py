@@ -3,10 +3,10 @@ CS5330 Final Project
 Yueyang Wu, Yuyang Tian, Liqi Qi
 """
 
+# import statements (do not delete the unused ones)
 import os
 import sys
 import ssl
-
 import pandas as pd
 import torch
 from PIL import Image
@@ -17,8 +17,8 @@ from torchvision import transforms
 from datetime import datetime
 
 # define hyper-parameters
-DATA_PATH = './data/images'  # all images
-LABEL_CSV_PATH = './data/labels.csv'  # all images and labels
+DATA_PATH = './data/images'  # all images files
+LABEL_CSV_PATH = './data/labels.csv'  # all image paths and labels
 TRAIN_LABEL_CSV_PATH = './data/mini_train_data.csv'  # training images and labels
 TEST_LABEL_CSV_PATH = './data/mini_test_data.csv'  # testing images and labels
 N_EPOCHS = 15
@@ -41,10 +41,14 @@ class DogBreedDataset(Dataset):
         self.transform = transform
 
     def __len__(self):
+        """
+        :return: the length of the dataset
+        """
         return len(self.breeds_frame)
 
     def __getitem__(self, idx):
         """
+        :param idx: the index of the item
         :return sample ([image, breed]) : the sample at dataset[idx]
         """
         if torch.is_tensor(idx):
@@ -62,15 +66,14 @@ class DogBreedDataset(Dataset):
 
 class MobilenetSubModel(nn.Module):
     """
+    A deep network modified from the pretrained mobilenet v2 model from PyTorch
     PyTorch MobileNet Documentation: https://pytorch.org/hub/pytorch_vision_mobilenet_v2/
-    Keep the features of MobileNet, modify the classifier
+    Keep the features of MobileNet, modify the classifier output to be 120
     """
     # initialize the model
     def __init__(self):
         super(MobilenetSubModel, self).__init__()
         self.model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
-        # for para in self.model.features.parameters():
-        #     para.requires_grad = False
         self.model.classifier[1] = nn.Linear(1280, 120)
         # print('---------------model-------------')
         # print(self.model)
@@ -78,15 +81,17 @@ class MobilenetSubModel(nn.Module):
         # print('----------------features-----------------')
         # print(self.features)
 
+    # compute a forward pass
     def forward(self, x):
         return self.model(x)
 
 
 class ResNetSubModel(nn.Module):
     """
-        PyTorch ResNet50 Documentation: https://pytorch.org/hub/nvidia_deeplearningexamples_resnet50/
-        Keep the features of ResNet50, modify the fully connected layer
-        """
+    A deep network modified from the pretrained resnet50 model from PyTorch
+    PyTorch ResNet50 Documentation: https://pytorch.org/hub/nvidia_deeplearningexamples_resnet50/
+    Keep the features of ResNet50, modify the fully connected layer output to be 120
+    """
     # initialize the model
     def __init__(self):
         super(ResNetSubModel, self).__init__()
@@ -95,14 +100,16 @@ class ResNetSubModel(nn.Module):
         # print('---------------model-------------')
         # print(self.model)
 
+    # compute a forward pass
     def forward(self, x):
         return self.model(x)
 
 
 class VGG16Model(nn.Module):
     """
+    A deep network modified from the pretrained vgg16 model from PyTorch
     PyTorch Vgg16 Documentation: https://pytorch.org/vision/main/generated/torchvision.models.vgg16.html
-    Keep the features of Vgg16, modify the classifier
+    Keep the features of Vgg16, modify the classifier output to be 120
     """
     # initialize the model
     def __init__(self):
@@ -117,11 +124,17 @@ class VGG16Model(nn.Module):
         # print('----------------features-----------------')
         # print(self.features)
 
+    # compute a forward pass
     def forward(self, x):
         return self.model(x)
 
 
 def build_breed_code_dicts(csv_file):
+    """
+    Build a dictionary that matches the dog breeds string to numeric data
+    :param csv_file: csv file with the dog breeds data
+    :return: a dictionary of the dog breeds and numeric data
+    """
     df = pd.read_csv(csv_file)
     label_arr = list(set(df.iloc[:, 1]))
     label_arr.sort()
@@ -135,12 +148,28 @@ def build_breed_code_dicts(csv_file):
 
 
 def build_dataframe(csv_file, breed_to_code_dict):
+    """
+    Read a csv file with dog breeds data, convert the breed string to numeric data, build a dataframe
+    :param csv_file: csv file with the dog breeds data
+    :param breed_to_code_dict: dictionary to convert the string to numeric data
+    :return: a dog breeds dataframe
+    """
     df = pd.read_csv(csv_file)
     df['code'] = [breed_to_code_dict[x] for x in df.breed]
     return df
 
 
-def train(train_loader, test_loader, model, loss_fn, optimizer, accuracy_arr, loss_arr, n_epochs=N_EPOCHS):
+def train(train_loader, model, loss_fn, optimizer, accuracy_arr, loss_arr, n_epochs=N_EPOCHS):
+    """
+    Train the model
+    :param train_loader: a data loader of training data
+    :param model: the model to be trained
+    :param loss_fn: the loss function used
+    :param optimizer: the optimizer used
+    :param accuracy_arr: the accuracy rate of each training epoch
+    :param loss_arr: the average loss of each training epoch
+    :param n_epochs: the number of training epochs
+    """
     print('Before Train:')
     test(test_loader=train_loader, model=model, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
     print('')
@@ -165,14 +194,21 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, accuracy_arr, lo
         filename = 'results/model_' + str(epoch + 1) + '.pth'
         torch.save(model.state_dict(), filename)
 
+        # display the training accuracy and loss
         print('Train:')
         test(test_loader=train_loader, model=model, loss_fn=loss_fn, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
-        # print('Test:')
-        # test(test_loader=test_loader, model=model, loss_fn=loss_fn)
         print('')
 
 
 def test(test_loader, model, loss_fn, accuracy_arr, loss_arr):
+    """
+    Test the model performance
+    :param test_loader: a data loader of the test data
+    :param model: the model to be tested
+    :param loss_fn: the loss function used
+    :param accuracy_arr: the accuracy rate
+    :param loss_arr: the average loss
+    """
     size = len(test_loader.dataset)
     num_batches = len(test_loader)
     test_loss, correct = 0, 0
@@ -186,12 +222,17 @@ def test(test_loader, model, loss_fn, accuracy_arr, loss_arr):
 
     test_loss /= num_batches
     correct /= size
-    print(f"Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f}")
-    accuracy_arr.append(100*correct)
+    print(f"Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f}")
+    accuracy_arr.append(100 * correct)
     loss_arr.append(test_loss)
 
 
 def plot_result(accuracy_arr, loss_arr):
+    """
+    Plot the accuracy rates and average losses
+    :param accuracy_arr: an array of accuracy rates
+    :param loss_arr: an array of average losses
+    """
     x_axis = list(range(1, N_EPOCHS + 2))
     plt.subplot(2, 1, 1)
     plt.plot(x_axis, accuracy_arr)
@@ -201,3 +242,13 @@ def plot_result(accuracy_arr, loss_arr):
     plt.title('Loss')
     plt.tight_layout()
     plt.show()
+
+
+def load_trained_model(model, pthFilePath):
+    """
+    load the previous model and optimizer data from file
+    :param model: model to be loaded
+    :param pthFilePath: pth file of the model
+    """
+    model_state_dict = torch.load(pthFilePath)
+    model.load_state_dict(model_state_dict)
