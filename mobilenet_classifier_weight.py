@@ -1,31 +1,39 @@
-import os
-import ssl
+"""
+CS5330 Final Project
+Yueyang Wu, Yuyang Tian, Liqi Qi
+"""
 
-import pandas as pd
-import torch
-from PIL import Image
-from matplotlib import pyplot as plt
-from torch import optim, nn
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-from datetime import datetime
-from dog_breed_classifier_mobilenet import *
+# import os
+# import ssl
+#
+# import pandas as pd
+# import torch
+# from PIL import Image
+# from matplotlib import pyplot as plt
+# from torch import optim, nn
+# from torch.utils.data import Dataset, DataLoader
+# from torchvision import transforms
+# from datetime import datetime
+# from dog_breed_classifier_mobilenet import *
 import cv2 as cv
+
+from utils import *
 
 # allow using unverified SSL due to some configuration issue
 ssl._create_default_https_context = ssl._create_unverified_context
 
-DATA_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/images'  # all images
-LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/labels.csv'  # all images and labels
-TRAIN_LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/train_data.csv'  # training images and labels
-TEST_LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/test_data.csv'  # testing images and labels
-N_EPOCHS = 15
-BATCH_SIZE_TRAIN = 64
-BATCH_SIZE_TEST = 64
-LEARNING_RATE = 0.001
+# DATA_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/images'  # all images
+# LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/labels.csv'  # all images and labels
+# TRAIN_LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/train_data.csv'  # training images and labels
+# TEST_LABEL_CSV_PATH = '/Users/tian/Documents/Workspace/cs5330-final-project/data/test_data.csv'  # testing images and labels
+# N_EPOCHS = 15
+# BATCH_SIZE_TRAIN = 64
+# BATCH_SIZE_TEST = 64
+# LEARNING_RATE = 0.001
+
 
 def load_trained_model(model, pthFilePath):
-    # load the previoud model and optimizer data from file
+    # load the previous model and optimizer data from file
     model_state_dict = torch.load(pthFilePath)
     model.load_state_dict(model_state_dict)
 
@@ -46,7 +54,6 @@ def main():
     # reshape the images to feed them to the model
     data_transform = transforms.Compose([
         transforms.Resize((224, 224)),
-        # transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
@@ -60,13 +67,12 @@ def main():
     # build mobilenet model
     mobilenet_model = MobilenetSubModel()
 
-    # load the previoud model from file
-    load_trained_model(mobilenet_model, pthFilePath='/Users/tian/Documents/Workspace/cs5330-final-project/results/model_mobilenet_16_0.001.pth')
+    # load the previous model from file
+    load_trained_model(mobilenet_model, pthFilePath='./results/model_mobilenet.pth')
 
     print(mobilenet_model.model.classifier[0])
 
-
-    #Analyze the classifier weight
+    # Analyze the classifier weight
     weight1 = mobilenet_model.model.classifier[1].weight
     print(weight1)
     print(weight1.shape)

@@ -1,4 +1,10 @@
+"""
+CS5330 Final Project
+Yueyang Wu, Yuyang Tian, Liqi Qi
+"""
+
 import os
+import sys
 import ssl
 
 import pandas as pd
@@ -10,13 +16,11 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from datetime import datetime
 
-# allow using unverified SSL due to some configuration issue
-ssl._create_default_https_context = ssl._create_unverified_context
-
-DATA_PATH = './data/data/images'  # all images
-LABEL_CSV_PATH = './data/data/labels.csv'  # all images and labels
-TRAIN_LABEL_CSV_PATH = './data/data/train_data.csv'  # training images and labels
-TEST_LABEL_CSV_PATH = './data/data/test_data.csv'  # testing images and labels
+# define hyper-parameters
+DATA_PATH = './data/images'  # all images
+LABEL_CSV_PATH = './data/labels.csv'  # all images and labels
+TRAIN_LABEL_CSV_PATH = './data/mini_train_data.csv'  # training images and labels
+TEST_LABEL_CSV_PATH = './data/mini_test_data.csv'  # testing images and labels
 N_EPOCHS = 15
 BATCH_SIZE_TRAIN = 64
 BATCH_SIZE_TEST = 64
@@ -78,6 +82,45 @@ class MobilenetSubModel(nn.Module):
         return self.model(x)
 
 
+class ResNetSubModel(nn.Module):
+    """
+        PyTorch ResNet50 Documentation: https://pytorch.org/hub/nvidia_deeplearningexamples_resnet50/
+        Keep the features of ResNet50, modify the fully connected layer
+        """
+    # initialize the model
+    def __init__(self):
+        super(ResNetSubModel, self).__init__()
+        self.model = torch.hub.load('NVIDIA/DeepLearningExamples:torchhub', 'nvidia_resnet50', pretrained=True)
+        self.model.fc = nn.Linear(2048, 120)
+        # print('---------------model-------------')
+        # print(self.model)
+
+    def forward(self, x):
+        return self.model(x)
+
+
+class VGG16Model(nn.Module):
+    """
+    PyTorch Vgg16 Documentation: https://pytorch.org/vision/main/generated/torchvision.models.vgg16.html
+    Keep the features of Vgg16, modify the classifier
+    """
+    # initialize the model
+    def __init__(self):
+        super(VGG16Model, self).__init__()
+        self.model = torch.hub.load('pytorch/vision:v0.10.0', 'vgg16', pretrained=True)
+        for para in self.model.features.parameters():
+            para.requires_grad = False
+        self.model.classifier[-1] = nn.Linear(4096, 120)
+        # print('---------------model-------------')
+        # print(self.model)
+        # self.features = model.features
+        # print('----------------features-----------------')
+        # print(self.features)
+
+    def forward(self, x):
+        return self.model(x)
+
+
 def build_breed_code_dicts(csv_file):
     df = pd.read_csv(csv_file)
     label_arr = list(set(df.iloc[:, 1]))
@@ -119,7 +162,7 @@ def train(train_loader, test_loader, model, loss_fn, optimizer, accuracy_arr, lo
                 print(f"[{current:>5d}/{size:>5d}]")
 
         # for each epoch, save a model version
-        filename = 'results/model_mobilenet_' + str(epoch + 1) + '.pth'
+        filename = 'results/model_' + str(epoch + 1) + '.pth'
         torch.save(model.state_dict(), filename)
 
         print('Train:')
@@ -158,71 +201,3 @@ def plot_result(accuracy_arr, loss_arr):
     plt.title('Loss')
     plt.tight_layout()
     plt.show()
-
-
-def main():
-    # make the code repeatable
-    torch.manual_seed(1)
-    torch.backends.cudnn.enabled = False
-
-    # build breed and code convert dicts
-    breed_to_code_dict, code_to_breed_dict = build_breed_code_dicts(LABEL_CSV_PATH)
-
-    # build dataframes
-    train_df = build_dataframe(TRAIN_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
-    test_df = build_dataframe(TEST_LABEL_CSV_PATH, breed_to_code_dict=breed_to_code_dict)
-
-    # load the training and testing data
-    # reshape the images to feed them to the model
-    data_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        # transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
-    ])
-    train_dataset = DogBreedDataset(DATA_PATH, train_df, data_transform)
-    test_dataset = DogBreedDataset(DATA_PATH, test_df, data_transform)
-
-    train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE_TRAIN, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE_TEST, shuffle=True)
-
-    # plot the first image in the test dataset, for testing purpose
-    # plt.imshow(train_dataset[0][0].permute(1, 2, 0))
-    # plt.show()
-
-    # build mobilenet model
-    mobilenet_model = MobilenetSubModel()
-    # print('-------------------mobilenet----------------------------')
-    # print(mobilenet_model)
-
-    # initialize the loss function and optimizer
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(mobilenet_model.parameters(), lr=LEARNING_RATE)
-
-    # train the model
-    print('*****Model Info*****')
-    print(f'Epoch Size: {N_EPOCHS}')
-    print(f'Train Batch Size: {BATCH_SIZE_TRAIN}')
-    print(f'Learning Rate: {LEARNING_RATE}')
-    print('********************\n')
-
-    accuracy_arr = []
-    loss_arr = []
-    start = datetime.now()
-    train(train_loader=train_loader, test_loader=test_loader, model=mobilenet_model, loss_fn=loss_fn,
-          optimizer=optimizer, accuracy_arr=accuracy_arr, loss_arr=loss_arr)
-    end = datetime.now()
-
-    print('Done!')
-    print(f'Total Training Time in seconds: {(end - start).total_seconds()}')
-
-    # save the final model
-    torch.save(mobilenet_model.state_dict(), 'results/model.pth')
-
-    # plot the accuracy and loss information
-    plot_result(accuracy_arr, loss_arr)
-
-
-if __name__ == "__main__":
-    main()
