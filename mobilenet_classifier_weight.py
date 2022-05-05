@@ -14,8 +14,7 @@ def main():
     """
     Build the training and testing data loaders
     Load the MobileNet model
-    Analyze the classifier weight of the model
-    Apply the filters to an image from the dataset and plot the results
+    Analyze the classifier weight of the model and plot the results
     """
     # make the code repeatable
     torch.manual_seed(1)
